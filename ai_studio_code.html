@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>당근 To-Do - 동네 할 일 관리</title>
+    <!-- Pretendard 폰트 적용 (당근 시스템 폰트) -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    
+    <style>
+        /* 1. Karrot Seed Design Tokens */
+        :root {
+            --carrot-orange: #ff6600;
+            --carrot-orange-deep: #e14d00;
+            --carrot-orange-tint: #fff2ec;
+            
+            --gray-1000: #1a1c20; /* Near Black */
+            --gray-800: #555d6d;  /* Body Text */
+            --gray-700: #868b94;  /* Sub Text */
+            --gray-400: #dcdee3;  /* Border */
+            --gray-200: #f3f4f5;  /* Secondary BG */
+            --gray-100: #f7f8f9;  /* Subtle BG */
+            --white: #ffffff;
+            
+            --bg-layer-default: var(--white);
+            --stroke-subtle: rgba(0, 0, 0, 0.08);
+            --shadow-s2: 0px 2px 10px rgba(0, 0, 0, 0.10);
+            
+            --radius-8: 8px;
+            --radius-12: 12px;
+            --radius-20: 20px;
+            --radius-pill: 9999px;
+        }
+
+        /* Dark Mode Semantic Remapping */
+        [data-theme="dark"] {
+            --bg-layer-default: #111827;
+            --gray-1000: #f9fafb;
+            --gray-800: #d1d5db;
+            --gray-700: #9ca3af;
+            --gray-400: #374151;
+            --gray-200: #1f2937;
+            --gray-100: #111827;
+            --carrot-orange-tint: #2d1a0a;
+            --stroke-subtle: rgba(255, 255, 255, 0.08);
+        }
+
+        /* 2. Base Layout */
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-layer-default);
+            color: var(--gray-1000);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px 16px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        /* 3. Header & Proximity */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .header-title {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .neighborhood-tag {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--carrot-orange);
+            margin-bottom: 4px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .theme-toggle {
+            background: var(--gray-200);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-12);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--gray-800);
+        }
+
+        /* 4. Progress Card */
+        .progress-section {
+            background-color: var(--gray-100);
+            padding: 20px;
+            border-radius: var(--radius-16);
+            margin-bottom: 24px;
+            border: 1px solid var(--stroke-subtle);
+        }
+
+        .progress-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--gray-800);
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar-bg {
+            background-color: var(--gray-400);
+            height: 6px;
+            border-radius: var(--radius-pill);
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            background-color: var(--carrot-orange);
+            height: 100%;
+            width: 0%;
+            transition: width 0.4s ease-out;
+        }
+
+        /* 5. Input Section */
+        .input-card {
+            background: var(--white);
+            border: 1px solid var(--gray-400);
+            border-radius: var(--radius-12);
+            padding: 16px;
+            margin-bottom: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: var(--shadow-s2);
+        }
+
+        .input-row { display: flex; gap: 8px; }
+
+        input[type="text"] {
+            flex: 1;
+            border: none;
+            background: var(--gray-100);
+            padding: 12px 16px;
+            border-radius: var(--radius-8);
+            font-size: 15px;
+            outline: none;
+            color: var(--gray-1000);
+        }
+
+        input[type="time"] {
+            border: none;
+            background: var(--gray-100);
+            padding: 10px;
+            border-radius: var(--radius-8);
+            font-weight: 600;
+            outline: none;
+            color: var(--gray-1000);
+        }
+
+        .primary-button {
+            background-color: var(--carrot-orange);
+            color: var(--white);
+            border: none;
+            padding: 14px;
+            border-radius: var(--radius-8);
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .primary-button:active { background-color: var(--carrot-orange-deep); }
+
+        /* 6. Task Item */
+        .task-list { display: flex; flex-direction: column; gap: 12px; }
+
+        .task-item {
+            background: var(--white);
+            padding: 16px;
+            border-radius: var(--radius-12);
+            border: 1px solid var(--stroke-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .task-info { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+
+        .task-time-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--carrot-orange);
+        }
+
+        .task-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--gray-1000);
+        }
+
+        .task-title.completed {
+            color: var(--gray-700);
+            text-decoration: line-through;
+        }
+
+        .task-actions { display: flex; align-items: center; gap: 16px; }
+
+        /* 7. Karrot Switch Style */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute; cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--gray-400);
+            transition: .3s;
+            border-radius: var(--radius-pill);
+        }
+
+        .slider:before {
+            position: absolute; content: "";
+            height: 18px; width: 18px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--carrot-orange); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .delete-x {
+            background: none; border: none;
+            color: var(--gray-700);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            margin-top: 60px;
+            color: var(--gray-700);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header class="header">
+        <div class="header-title">
+            <span class="neighborhood-tag">망원동 지우님</span>
+            <h1>동네 할 일</h1>
+        </div>
+        <button class="theme-toggle" id="theme-btn">
+            <span id="theme-icon">
+                <!-- Moon Icon -->
+                <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </span>
+        </button>
+    </header>
+
+    <div class="progress-section">
+        <div class="progress-label">
+            <span>오늘 마친 일</span>
+            <span id="progress-percent">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+    </div>
+
+    <div class="input-card">
+        <div class="input-row">
+            <input type="text" id="todo-input" placeholder="이웃과 약속이나 할 일을 적어보세요">
+            <input type="time" id="todo-time">
+        </div>
+        <button class="primary-button" onclick="addTask()">작성하기</button>
+    </div>
+
+    <div id="task-list" class="task-list"></div>
+    <div id="empty-msg" class="empty-state">아직 우리 동네에 올라온 할 일이 없어요.</div>
+</div>
+
+<script>
+    let tasks = [];
+    let isDarkMode = false;
+
+    const moonIcon = `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+    const sunIcon = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+
+    const themeBtn = document.getElementById('theme-btn');
+    themeBtn.addEventListener('click', () => {
+        isDarkMode = !isDarkMode;
+        document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+        document.getElementById('theme-icon').innerHTML = isDarkMode ? sunIcon : moonIcon;
+    });
+
+    function addTask() {
+        const input = document.getElementById('todo-input');
+        const timeInput = document.getElementById('todo-time');
+        if (input.value.trim()) {
+            tasks.push({ 
+                id: Date.now(), 
+                text: input.value.trim(), 
+                time: timeInput.value || "", 
+                completed: false 
+            });
+            input.value = "";
+            timeInput.value = "";
+            render();
+        }
+    }
+
+    function deleteTask(id) {
+        tasks = tasks.filter(t => t.id !== id);
+        render();
+    }
+
+    function toggleTask(id) {
+        tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+        render();
+    }
+
+    function render() {
+        const listEl = document.getElementById('task-list');
+        listEl.innerHTML = '';
+
+        const sortedTasks = [...tasks].sort((a, b) => (a.time > b.time ? 1 : -1));
+
+        sortedTasks.forEach(task => {
+            const item = document.createElement('div');
+            item.className = 'task-item';
+            const timeHtml = task.time ? `<span class="task-time-label">${task.time}</span>` : '';
+            
+            item.innerHTML = `
+                <div class="task-info">
+                    ${timeHtml}
+                    <span class="task-title ${task.completed ? 'completed' : ''}">${task.text}</span>
+                </div>
+                <div class="task-actions">
+                    <label class="switch">
+                        <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
+                        <span class="slider"></span>
+                    </label>
+                    <button class="delete-x" onclick="deleteTask(${task.id})">×</button>
+                </div>
+            `;
+            listEl.appendChild(item);
+        });
+
+        const total = tasks.length;
+        const done = tasks.filter(t => t.completed).length;
+        const percent = total === 0 ? 0 : Math.round((done / total) * 100);
+        
+        document.getElementById('progress-fill').style.width = percent + '%';
+        document.getElementById('progress-percent').innerText = percent + '%';
+        document.getElementById('empty-msg').style.display = total === 0 ? 'block' : 'none';
+    }
+</script>
+
+</body>
+</html>
